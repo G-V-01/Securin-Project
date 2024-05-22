@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CVE Details</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      margin: 0;
+      padding: 0;
+    }
+    .container {
+      width: 100%;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    h1, h2, p {
+      margin: 0 0 10px 0;
+    }
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      margin-bottom: 20px;
+    }
+    th, td {
+      padding: 10px;
+      border: 1px solid #ddd;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>CVE Details</h1>
+    <hr>
+    <h2>CVE ID:</h2>
+    <p id="cve-id"></p>
+
+    <h2>Description:</h2>
+    <p id="description"></p>
+    <table>
+        <tbody id="cpee-table">
+        </tbody>
+    </table>
+    <h2>CVSS v2 Metrics:</h2>
+    <ul id="cvss-metrics">
+      <li><strong>Severity:</strong></li>
+      <li><strong>Score:</strong></li>
+      <li><strong>Exploitability Score:</strong></li>
+      <li><strong>Impact Score:</strong></li>
+    </ul>
+
+    <h2>CPE</h2>
+    <table id="cpe-table">
+      <tr>
+        <th>CPE</th>
+        <th>Criteria</th>
+        <th>Match Criteria ID</th>
+        <th>Vulnerable</th>
+      </tr>
+    </table>
+    
+  </div>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", function() {
+      const cveIdElement = document.getElementById('cve-id');
+      const descriptionElement = document.getElementById('description');
+      const cvssMetricsElement = document.getElementById('cvss-metrics');
+      const cpeTable = document.getElementById('cpe-table');
+      const cpeeTable = document.getElementById('cpee-table');
+  
+      function fetchCVEData(cveId) {
+        fetch(`http://localhost:3000/get-details?cveId=${cveId}`)
+          .then(response => response.json())
+          .then(data => {
+            const { cveId, description, cvssMetrics, cpeList, cpeeMetrics } = data;
+            console.log(data);
+            cveIdElement.textContent = cveId;
+            descriptionElement.textContent = description;
+            cvssMetricsElement.innerHTML = `
+              <li><strong>Severity:</strong> ${cvssMetrics.severity}</li>
+              <li><strong>Score:</strong> ${cvssMetrics.score}</li>
+              <li><strong>Exploitability Score:</strong> ${cvssMetrics.exploitabilityScore}</li>
+              <li><strong>Impact Score:</strong> ${cvssMetrics.impactScore}</li>
+            `;
+  
+            cpeTable.innerHTML = `
+              <tr>
+                <th>CPE</th>
+                <th>Criteria</th>
+                <th>Match Criteria ID</th>
+                <th>Vulnerable</th>
+              </tr>
+              ${cpeList.map(cpe => `
+                <tr>
+                  <td>${cpe.cpe}</td>
+                  <td>${cpe.criteria}</td>
+                  <td>${cpe.matchCriteriaId}</td>
+                  <td>${cpe.vulnerable}</td>
+                </tr>
+              `).join('')}
+            `;
+            cpeeTable.innerHTML = `
+            <thead>
+              <tr>
+                <th>Access Vector</th>
+                <th>Access Complexity</th>
+                <th>Authentication</th>
+                <th>Confidentiality Impact</th>
+                <th>Integrity Impact</th>
+                <th>Availability Impact</th>
+              </tr>
+              </thead>
+              <tr>
+                <td>${cpeeMetrics.accessVector}</td>
+                <td>${cpeeMetrics.accessComplexity}</td>
+                <td>${cpeeMetrics.authentication}</td>
+                <td>${cpeeMetrics.confidentialityImpact}</td>
+                <td>${cpeeMetrics.integrityImpact}</td>
+                <td>${cpeeMetrics.availabilityImpact}</td>
+              </tr>
+            `;
+          })
+          .catch(error => console.error('Error fetching data:', error));
+      }
+  
+      // Extract CVE ID from query parameter
+      const urlParams = new URLSearchParams(window.location.search);
+      const cveId = urlParams.get('cveId');
+  
+      fetchCVEData(cveId);
+    });
+  </script>
+  
+</body>
+</html>

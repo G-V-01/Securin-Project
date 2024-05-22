@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vulnerability List</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            text-align: center;
+        }
+
+        .table-wrapper {
+            overflow-x: auto;
+        }
+
+        table {
+            border-collapse: collapse;
+            width: 100%;
+        }
+
+        th, td {
+            padding: 10px;
+            border: 1px solid #ddd;
+        }
+
+        footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-top: 20px;
+        }
+
+        .results-per-page {
+            margin-right: 20px;
+        }
+
+        .pagination {
+            display: flex;
+            align-items: center;
+        }
+
+        .pagination button {
+            margin-left: 10px;
+            padding: 5px 10px;
+            border: 1px solid #ddd;
+            cursor: pointer;
+        }
+
+        .pagination button:disabled {
+            opacity: 0.5;
+            cursor: default;
+        }
+
+        .clickable {
+            cursor: pointer;
+            color: blue;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>CVE LIST</h1>
+        </header>
+        <h2>Total Records: <span id="total-records"></span></h2>
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th>CVE ID</th>
+                        <th>IDENTIFIER</th>
+                        <th>PUBLISHED DATE</th>
+                        <th>LAST MODIFIED DATE</th>
+                        <th>STATUS</th>
+                    </tr>
+                </thead>
+                <tbody id="table-body">
+                </tbody>
+            </table>
+        </div>
+        <footer>
+            <div class="results-per-page">
+                Results per page: <select id="results-per-page">
+                    <option value="10">10</option>
+                    <option value="50">50</option>
+                    <option value="100">100</option>
+                </select>
+            </div>
+            <div class="pagination">
+                <span id="record-range">0-0 of 0 records</span>
+                <button id="prev-page" disabled>Previous</button>
+                <button id="next-page">Next</button>
+            </div>
+        </footer>
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const tableBody = document.getElementById('table-body');
+            const totalRecordsSpan = document.getElementById('total-records');
+            const recordRangeSpan = document.getElementById('record-range');
+            const prevPageBtn = document.getElementById('prev-page');
+            const nextPageBtn = document.getElementById('next-page');
+            const resultsPerPageSelect = document.getElementById('results-per-page');
+
+            let currentPage = 1;
+            let totalRecords = 0;
+            let recordsPerPage = parseInt(resultsPerPageSelect.value);
+
+            function fetchCVEData() {
+                const url = `http://localhost:3000/cve?page=${currentPage}&limit=${recordsPerPage}`;
+                fetch(url)
+                    .then(response => response.json())
+                    .then(data => {
+                        tableBody.innerHTML = '';
+                        data.data.forEach(entry => {
+                            const row = document.createElement('tr');
+                            Object.values(entry).forEach((value, index) => {
+                                const cell = document.createElement('td');
+                                cell.textContent = value;
+                                if (index === 0) { // Add click event listener only to the first cell (CVE ID)
+                                    cell.classList.add('clickable');
+                                    cell.addEventListener('click', () => {
+                                        const cveId = cell.textContent; // Get the CVE ID from the cell
+                                        window.location.href = `Page-2.html?cveId=${cveId}`;
+                                    });
+                                }
+                                row.appendChild(cell);
+                            });
+                            tableBody.appendChild(row);
+                        });
+                        totalRecords = data.total;
+                        totalRecordsSpan.textContent = totalRecords;
+                        updatePagination();
+                    })
+                    .catch(error => console.error('Error fetching data:', error));
+            }
+
+            function updatePagination() {
+                const start = (currentPage - 1) * recordsPerPage + 1;
+                const end = Math.min(start + recordsPerPage - 1, totalRecords);
+                recordRangeSpan.textContent = `${start}-${end} of ${totalRecords} records`;
+                prevPageBtn.disabled = currentPage === 1;
+                nextPageBtn.disabled = end >= totalRecords;
+            }
+
+            prevPageBtn.addEventListener('click', () => {
+                if (currentPage > 1) {
+                    currentPage--;
+                    fetchCVEData();
+                }
+            });
+
+            nextPageBtn.addEventListener('click', () => {
+                if (currentPage < Math.ceil(totalRecords / recordsPerPage)) {
+                    currentPage++;
+                    fetchCVEData();
+                }
+            });
+
+            resultsPerPageSelect.addEventListener('change', () => {
+                recordsPerPage = parseInt(resultsPerPageSelect.value);
+                currentPage = 1;
+                fetchCVEData();
+            });
+
+            fetchCVEData();
+        });
+    </script>
+</body>
+</html>
